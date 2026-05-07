@@ -93,6 +93,23 @@ resource "rabbitmq_queue" "q_2ai_classify" {
   depends_on = [rabbitmq_exchange.retry_direct]
 }
 
+resource "rabbitmq_queue" "q_ai_deployment" {
+  name  = "q.ai.deployment"
+  vhost = var.vhost
+
+  settings {
+    durable     = true
+    auto_delete = false
+
+    arguments = {
+      "x-dead-letter-exchange"    = rabbitmq_exchange.retry_direct.name
+      "x-dead-letter-routing-key" = "deployment.retry"
+    }
+  }
+
+  depends_on = [rabbitmq_exchange.retry_direct]
+}
+
 resource "rabbitmq_queue" "q_2app_classify" {
   name  = "q.2app.classify"
   vhost = var.vhost
@@ -129,6 +146,24 @@ resource "rabbitmq_queue" "q_2ai_classify_retry" {
       "x-message-ttl"             = 30000
       "x-dead-letter-exchange"    = rabbitmq_exchange.app2ai_direct.name
       "x-dead-letter-routing-key" = "2ai.classify"
+    })
+  }
+
+  depends_on = [rabbitmq_exchange.app2ai_direct]
+}
+
+resource "rabbitmq_queue" "q_ai_deployment_retry" {
+  name  = "q.ai.deployment.retry"
+  vhost = var.vhost
+
+  settings {
+    durable     = true
+    auto_delete = false
+
+    arguments_json = jsonencode({
+      "x-message-ttl"             = 30000
+      "x-dead-letter-exchange"    = rabbitmq_exchange.app2ai_direct.name
+      "x-dead-letter-routing-key" = "deployment"
     })
   }
 
@@ -186,6 +221,19 @@ resource "rabbitmq_binding" "bind_2ai_classify" {
   ]
 }
 
+resource "rabbitmq_binding" "bind_ai_deployment" {
+  source           = rabbitmq_exchange.app2ai_direct.name
+  vhost            = var.vhost
+  destination      = rabbitmq_queue.q_ai_deployment.name
+  destination_type = "queue"
+  routing_key      = "deployment"
+
+  depends_on = [
+    rabbitmq_exchange.app2ai_direct,
+    rabbitmq_queue.q_ai_deployment,
+  ]
+}
+
 resource "rabbitmq_binding" "bind_2app_classify" {
   source           = rabbitmq_exchange.ai2app_direct.name
   vhost            = var.vhost
@@ -213,6 +261,19 @@ resource "rabbitmq_binding" "bind_retry_2ai_classify" {
   depends_on = [
     rabbitmq_exchange.retry_direct,
     rabbitmq_queue.q_2ai_classify_retry,
+  ]
+}
+
+resource "rabbitmq_binding" "bind_retry_ai_deployment" {
+  source           = rabbitmq_exchange.retry_direct.name
+  vhost            = var.vhost
+  destination      = rabbitmq_queue.q_ai_deployment_retry.name
+  destination_type = "queue"
+  routing_key      = "deployment.retry"
+
+  depends_on = [
+    rabbitmq_exchange.retry_direct,
+    rabbitmq_queue.q_ai_deployment_retry,
   ]
 }
 

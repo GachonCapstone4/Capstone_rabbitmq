@@ -14,6 +14,7 @@ output "main_queues" {
   value = [
     rabbitmq_queue.q_2ai_classify.name,
     rabbitmq_queue.q_2app_classify.name,
+    rabbitmq_queue.q_ai_deployment.name,
     rabbitmq_queue.q_2rag_knowledge_ingest.name,
     rabbitmq_queue.q_2rag_templates_index.name,
     rabbitmq_queue.q_2rag_templates_match.name,
@@ -31,6 +32,7 @@ output "retry_queues" {
   value = [
     rabbitmq_queue.q_2ai_classify_retry.name,
     rabbitmq_queue.q_2app_classify_retry.name,
+    rabbitmq_queue.q_ai_deployment_retry.name,
     rabbitmq_queue.q_2rag_knowledge_ingest_retry.name,
     rabbitmq_queue.q_2rag_templates_index_retry.name,
     rabbitmq_queue.q_2rag_templates_match_retry.name,
